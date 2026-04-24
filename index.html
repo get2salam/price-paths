@@ -7,37 +7,38 @@
     <meta name="description" content="Sketch pricing experiments and compare which paths feel strongest." />
     <link rel="stylesheet" href="./styles/app.css" />
   </head>
-  <body style="--primary:#fbbf24;--secondary:#fde68a;--panel:#1a1508;--edge:#5a4718;--glow:rgba(251, 191, 36, 0.22)">
+  <body style="--primary:#f97316;--secondary:#facc15;--panel:#1a1108;--edge:#6d4b1f;--glow:rgba(249, 115, 22, 0.22)">
     <div class="shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Local-first micro app</p>
+          <p class="eyebrow">Pricing workspace</p>
           <h1>Price Paths</h1>
-          <p class="lede">Sketch pricing experiments and compare which paths feel strongest.</p>
+          <p class="lede">Track pricing experiments with audience, risk, confidence, and next review dates.</p>
         </div>
         <div class="actions">
           <button class="btn" data-action="import">Import</button>
           <button class="btn" data-action="export">Export</button>
-          <button class="btn btn-primary" data-action="new">New path</button>
+          <button class="btn btn-primary" data-action="new">New price path</button>
           <input id="import-file" type="file" accept=".json,application/json" hidden />
         </div>
       </header>
 
       <section class="hero card">
         <div>
-          <p class="eyebrow">Paths board</p>
+          <p class="eyebrow">Price paths board</p>
           <h2 data-role="board-title"></h2>
           <p data-role="board-subtitle"></p>
         </div>
-        <p class="accent">Pricing becomes easier when the tradeoffs are visible instead of emotional.</p>
+        <p class="accent">Pricing gets clearer when audience, risk, confidence, and review timing are visible for each path.</p>
       </section>
 
       <section class="stats" data-role="stats"></section>
+      <section class="insights" data-role="insights"></section>
 
       <section class="controls card">
         <label>
           <span>Search</span>
-          <input type="search" data-field="search" placeholder="Search paths..." />
+          <input type="search" data-field="search" placeholder="Search price paths, notes, and next steps..." />
         </label>
         <label>
           <span>Path type</span>
@@ -54,14 +55,19 @@
         <article class="card list-panel">
           <div class="panel-head">
             <div>
-              <strong>Paths</strong>
-              <p>Sorted by signal minus friction.</p>
+              <strong>Price paths</strong>
+              <p>Sketch pricing experiments and compare which paths feel strongest.</p>
             </div>
             <span class="chip" data-role="count"></span>
           </div>
           <div class="list" data-role="list"></div>
         </article>
         <article class="card editor-panel" data-role="editor"></article>
+      </section>
+
+      <section class="secondary">
+        <article class="card secondary-panel" data-role="secondary-primary"></article>
+        <article class="card secondary-panel" data-role="secondary-secondary"></article>
       </section>
     </div>
     <script type="module" src="./js/main.js"></script>
