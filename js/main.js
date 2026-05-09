@@ -277,17 +277,25 @@ function seedState() {
   };
 }
 
+function safeLoad(parsed) {
+  const seed = seedState();
+  if (!parsed || typeof parsed !== 'object') return seed;
+  const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+  const rawUi = parsed.ui && typeof parsed.ui === 'object' ? parsed.ui : {};
+  return {
+    ...seed,
+    boardTitle: typeof parsed.boardTitle === 'string' ? parsed.boardTitle : seed.boardTitle,
+    boardSubtitle: typeof parsed.boardSubtitle === 'string' ? parsed.boardSubtitle : seed.boardSubtitle,
+    items: rawItems.map((item) => normalize(item)),
+    ui: { ...seed.ui, ...rawUi },
+  };
+}
+
 function hydrate() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return seedState();
-    const parsed = JSON.parse(raw);
-    return {
-      ...seedState(),
-      ...parsed,
-      items: (parsed.items || []).map((item) => normalize(item)),
-      ui: { ...seedState().ui, ...(parsed.ui || {}) },
-    };
+    return safeLoad(JSON.parse(raw));
   } catch (error) {
     console.warn('Falling back to seed state', error);
     return seedState();
@@ -373,13 +381,7 @@ function exportState() {
 
 async function importState(file) {
   const raw = await file.text();
-  const parsed = JSON.parse(raw);
-  commit({
-    ...seedState(),
-    ...parsed,
-    items: (parsed.items || []).map((item) => normalize(item)),
-    ui: { ...seedState().ui, ...(parsed.ui || {}) },
-  });
+  commit(safeLoad(JSON.parse(raw)));
   showToast('Imported backup.');
 }
 
