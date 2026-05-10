@@ -173,6 +173,9 @@ const refs = {
 const toastHost = (() => {
   const host = document.createElement('div');
   host.className = 'toast-host';
+  host.setAttribute('role', 'status');
+  host.setAttribute('aria-live', 'polite');
+  host.setAttribute('aria-atomic', 'true');
   document.body.appendChild(host);
   return host;
 })();
@@ -223,7 +226,8 @@ function escapeHtml(value) {
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 function clamp(value, min, max) {
@@ -484,7 +488,7 @@ function renderList(items) {
   }
 
   refs.list.innerHTML = items.map((item) => `
-    <button class="item ${item.id === state.ui.selectedId ? 'is-selected' : ''}" type="button" data-id="${item.id}">
+    <button class="item ${item.id === state.ui.selectedId ? 'is-selected' : ''}" type="button" data-id="${item.id}" aria-pressed="${item.id === state.ui.selectedId}">
       <div class="item-top">
         <strong>${item.title}</strong>
         <span class="score">${priority(item)}</span>
@@ -697,6 +701,13 @@ document.addEventListener('change', async (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && event.target === refs.search) {
+    if (refs.search.value) {
+      commit({ ...state, ui: { ...state.ui, search: '' } });
+    }
+    refs.search.blur();
+    return;
+  }
   if (event.target.closest('input, textarea, select')) return;
   if (event.key.toLowerCase() === 'n') {
     event.preventDefault();

@@ -35,6 +35,7 @@ Then open <http://localhost:8000>.
 
 - `N` creates a new price path
 - `/` focuses the search box
+- `Esc` clears the search box when it is focused
 
 ## Privacy
 
