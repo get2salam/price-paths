@@ -196,6 +196,13 @@ function uid() {
   return `${SPEC.slug}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidISODate(value) {
+  if (typeof value !== 'string' || !ISO_DATE.test(value)) return false;
+  return !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+}
+
 function todayISO(offset = 0) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
@@ -204,20 +211,21 @@ function todayISO(offset = 0) {
 }
 
 function daysFromToday(value) {
-  if (!value) return 999;
+  if (!isValidISODate(value)) return 999;
   const today = new Date(`${todayISO()}T00:00:00`);
   const target = new Date(`${value}T00:00:00`);
   return Math.round((target - today) / 86400000);
 }
 
 function bumpDate(value, days) {
-  const date = new Date(`${value || todayISO()}T00:00:00`);
+  const base = isValidISODate(value) ? value : todayISO();
+  const date = new Date(`${base}T00:00:00`);
   date.setDate(date.getDate() + days);
   return date.toISOString().slice(0, 10);
 }
 
 function formatDate(value) {
-  if (!value) return 'No date';
+  if (!isValidISODate(value)) return 'No date';
   return new Date(`${value}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
@@ -231,7 +239,9 @@ function escapeHtml(value) {
 }
 
 function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, Number(value)));
+  const num = Number(value);
+  if (!Number.isFinite(num)) return min;
+  return Math.max(min, Math.min(max, num));
 }
 
 function completedStates() {
@@ -262,7 +272,7 @@ function normalize(item = {}) {
     metric: clamp(item.metric ?? SPEC.metric.default ?? 6, SPEC.metric.min, SPEC.metric.max),
     textOne: item.textOne || SPEC.textOne.default,
     textTwo: item.textTwo || SPEC.textTwo.default,
-    date: item.date || todayISO(3),
+    date: isValidISODate(item.date) ? item.date : todayISO(3),
   };
 }
 
@@ -709,6 +719,7 @@ document.addEventListener('keydown', (event) => {
     return;
   }
   if (event.target.closest('input, textarea, select')) return;
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.key.toLowerCase() === 'n') {
     event.preventDefault();
     addItem();
