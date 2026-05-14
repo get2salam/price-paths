@@ -203,11 +203,18 @@ function isValidISODate(value) {
   return !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
 }
 
+function toLocalISO(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function todayISO(offset = 0) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
   date.setDate(date.getDate() + offset);
-  return date.toISOString().slice(0, 10);
+  return toLocalISO(date);
 }
 
 function daysFromToday(value) {
@@ -221,7 +228,7 @@ function bumpDate(value, days) {
   const base = isValidISODate(value) ? value : todayISO();
   const date = new Date(`${base}T00:00:00`);
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return toLocalISO(date);
 }
 
 function formatDate(value) {
