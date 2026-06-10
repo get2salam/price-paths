@@ -1,0 +1,10 @@
+{
+  "name": "price-paths",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sketch pricing experiments and compare which paths feel strongest.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

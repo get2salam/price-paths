@@ -1,159 +1,19 @@
-const SPEC = {
-  "slug": "price-paths",
-  "title": "Price Paths",
-  "description": "Sketch pricing experiments and compare which paths feel strongest.",
-  "lede": "Track pricing experiments with audience, risk, confidence, and next review dates.",
-  "heroEyebrow": "Pricing workspace",
-  "boardTitle": "Price paths board",
-  "boardSubtitle": "A local-first board for testing price structures without losing the reasoning behind them.",
-  "accent": "Pricing gets clearer when audience, risk, confidence, and review timing are visible for each path.",
-  "itemLabel": "price path",
-  "itemPluralLabel": "Price paths",
-  "labels": {
-    "title": "Price path",
-    "note": "Pricing note",
-    "category": "Path type",
-    "state": "Status",
-    "score": "Upside",
-    "effort": "Risk"
-  },
-  "metric": {
-    "label": "Confidence",
-    "min": 1,
-    "max": 10,
-    "default": 6
-  },
-  "textOne": {
-    "label": "Audience",
-    "default": "Who this price path is for"
-  },
-  "textTwo": {
-    "label": "Risk",
-    "default": "What could make this fail"
-  },
-  "date": {
-    "label": "Review date"
-  },
-  "categories": [
-    "Entry",
-    "Core",
-    "Premium",
-    "Experiment"
-  ],
-  "states": [
-    "Exploring",
-    "Testing",
-    "Validated",
-    "Dropped"
-  ],
-  "completedStates": [
-    "Validated",
-    "Dropped"
-  ],
-  "stateWeights": {
-    "Exploring": 2,
-    "Testing": 8,
-    "Validated": 4,
-    "Dropped": 1
-  },
-  "defaults": {
-    "note": "Write the pricing logic here so the path can be judged on evidence, not mood."
-  },
-  "stats": {
-    "totalLabel": "Paths",
-    "motionLabel": "Being tested",
-    "dueLabel": "Reviews soon"
-  },
-  "insights": {
-    "topLabel": "Best pricing bet",
-    "dateLabel": "Next pricing review",
-    "metricLabel": "Highest confidence"
-  },
-  "queue": {
-    "eyebrow": "Pricing queue",
-    "title": "What to pressure-test next",
-    "empty": "Validated and dropped paths leave the active queue."
-  },
-  "mix": {
-    "eyebrow": "Pricing mix",
-    "title": "How the paths are distributed"
-  },
-  "emptyTitle": "No price paths yet",
-  "emptyBody": "Add entry, core, premium, and experiment paths you want to compare.",
-  "actions": [
-    {
-      "id": "start-test",
-      "label": "Start test",
-      "mode": "advance",
-      "state": "Testing",
-      "days": 3,
-      "fromToday": true,
-      "toast": "Moved this price path into testing."
-    },
-    {
-      "id": "raise-confidence",
-      "label": "Raise confidence",
-      "mode": "advance",
-      "metricDelta": 1,
-      "toast": "Raised confidence on this path."
-    },
-    {
-      "id": "drop",
-      "label": "Drop path",
-      "mode": "advance",
-      "state": "Dropped",
-      "days": 0,
-      "fromToday": true,
-      "toast": "Dropped this price path for now."
-    }
-  ],
-  "theme": {
-    "primary": "#f97316",
-    "secondary": "#facc15",
-    "panel": "#1a1108",
-    "edge": "#6d4b1f",
-    "glow": "rgba(249, 115, 22, 0.22)"
-  },
-  "items": [
-    {
-      "title": "Low-friction pilot",
-      "category": "Entry",
-      "state": "Testing",
-      "score": 8,
-      "effort": 3,
-      "metric": 7,
-      "textOne": "First-time buyer",
-      "textTwo": "Too cheap may feel low-trust",
-      "date": "2026-04-26",
-      "note": "The pilot price should lower hesitation without making the work feel disposable."
-    },
-    {
-      "title": "Core monthly retainer",
-      "category": "Core",
-      "state": "Exploring",
-      "score": 9,
-      "effort": 4,
-      "metric": 6,
-      "textOne": "Growing firms",
-      "textTwo": "Scope creep risk",
-      "date": "2026-04-29",
-      "note": "This could become the stable spine if scope is bounded hard enough."
-    },
-    {
-      "title": "Premium advisory path",
-      "category": "Premium",
-      "state": "Validated",
-      "score": 7,
-      "effort": 2,
-      "metric": 8,
-      "textOne": "High-trust buyer",
-      "textTwo": "Needs stronger exclusivity framing",
-      "date": "2026-04-24",
-      "note": "Works when the proof stack is strong enough to justify premium trust."
-    }
-  ]
-};
-const STORAGE_KEY = `${SPEC.slug}/state/v3`;
+import {
+  SPEC,
+  STORAGE_KEY,
+  bestActiveItem,
+  bumpDate,
+  clamp,
+  completedStates,
+  daysFromToday,
+  isValidISODate,
+  normalize,
+  priority,
+  safeLoad,
+  seedState,
+  todayISO,
+} from './state.js';
+
 const refs = {
   boardTitle: document.querySelector('[data-role="board-title"]'),
   boardSubtitle: document.querySelector('[data-role="board-subtitle"]'),
@@ -192,45 +52,6 @@ function showToast(message) {
   }, 2200);
 }
 
-function uid() {
-  return `${SPEC.slug}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-function isValidISODate(value) {
-  if (typeof value !== 'string' || !ISO_DATE.test(value)) return false;
-  return !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
-}
-
-function toLocalISO(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function todayISO(offset = 0) {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + offset);
-  return toLocalISO(date);
-}
-
-function daysFromToday(value) {
-  if (!isValidISODate(value)) return 999;
-  const today = new Date(`${todayISO()}T00:00:00`);
-  const target = new Date(`${value}T00:00:00`);
-  return Math.round((target - today) / 86400000);
-}
-
-function bumpDate(value, days) {
-  const base = isValidISODate(value) ? value : todayISO();
-  const date = new Date(`${base}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return toLocalISO(date);
-}
-
 function formatDate(value) {
   if (!isValidISODate(value)) return 'No date';
   return new Date(`${value}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
@@ -245,71 +66,12 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function clamp(value, min, max) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return min;
-  return Math.max(min, Math.min(max, num));
-}
-
-function completedStates() {
-  return new Set(SPEC.completedStates || []);
-}
-
-function stateWeight(state) {
-  return (SPEC.stateWeights || {})[state] ?? 0;
-}
-
 function toneForDate(item) {
   if (completedStates().has(item.state)) return 'success';
   const days = daysFromToday(item.date);
   if (days <= 0) return 'danger';
   if (days <= 2) return 'warn';
   return 'success';
-}
-
-function normalize(item = {}) {
-  return {
-    id: item.id || uid(),
-    title: item.title || `New ${SPEC.itemLabel}`,
-    note: item.note || SPEC.defaults.note,
-    category: SPEC.categories.includes(item.category) ? item.category : SPEC.categories[0],
-    state: SPEC.states.includes(item.state) ? item.state : SPEC.states[0],
-    score: clamp(item.score ?? 7, 1, 10),
-    effort: clamp(item.effort ?? 3, 1, 10),
-    metric: clamp(item.metric ?? SPEC.metric.default ?? 6, SPEC.metric.min, SPEC.metric.max),
-    textOne: item.textOne || SPEC.textOne.default,
-    textTwo: item.textTwo || SPEC.textTwo.default,
-    date: isValidISODate(item.date) ? item.date : todayISO(3),
-  };
-}
-
-function priority(item) {
-  const completed = completedStates().has(item.state);
-  const dueBoost = completed ? 0 : Math.max(0, 4 - Math.max(daysFromToday(item.date), 0)) * 4;
-  return item.score * 6 + item.metric * 5 + dueBoost + stateWeight(item.state) - item.effort * 4;
-}
-
-function seedState() {
-  return {
-    boardTitle: SPEC.boardTitle,
-    boardSubtitle: SPEC.boardSubtitle,
-    items: SPEC.items.map((item) => normalize(item)),
-    ui: { search: '', category: 'all', status: 'all', selectedId: null },
-  };
-}
-
-function safeLoad(parsed) {
-  const seed = seedState();
-  if (!parsed || typeof parsed !== 'object') return seed;
-  const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
-  const rawUi = parsed.ui && typeof parsed.ui === 'object' ? parsed.ui : {};
-  return {
-    ...seed,
-    boardTitle: typeof parsed.boardTitle === 'string' ? parsed.boardTitle : seed.boardTitle,
-    boardSubtitle: typeof parsed.boardSubtitle === 'string' ? parsed.boardSubtitle : seed.boardSubtitle,
-    items: rawItems.map((item) => normalize(item)),
-    ui: { ...seed.ui, ...rawUi },
-  };
 }
 
 function hydrate() {
@@ -463,10 +225,12 @@ function renderStats(items) {
   refs.count.textContent = items[0] ? `Top: ${items[0].title}` : `No ${SPEC.itemPluralLabel.toLowerCase()}`;
 }
 
-function renderInsights(items) {
+function renderInsights() {
   const nextSlot = [...state.items].filter((item) => !completedStates().has(item.state)).sort((a, b) => daysFromToday(a.date) - daysFromToday(b.date))[0];
   const strongestMetric = [...state.items].sort((a, b) => b.metric - a.metric)[0];
-  const bestBet = items[0];
+  // The "best current bet" should reflect what to act on next, so it must
+  // exclude validated and dropped paths even when they have high upside.
+  const bestBet = bestActiveItem(state.items);
   const cards = [
     {
       label: SPEC.insights.topLabel || 'Best current bet',
@@ -660,7 +424,7 @@ function render() {
   const items = filteredItems();
   if (!items.some((item) => item.id === state.ui.selectedId)) state.ui.selectedId = items[0]?.id || null;
   renderStats(items);
-  renderInsights(items);
+  renderInsights();
   renderList(items);
   renderEditor(selectedItem());
   renderPanels();
