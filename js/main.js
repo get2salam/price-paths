@@ -20,6 +20,7 @@ const refs = {
   stats: document.querySelector('[data-role="stats"]'),
   insights: document.querySelector('[data-role="insights"]'),
   count: document.querySelector('[data-role="count"]'),
+  resultsSummary: document.querySelector('[data-role="results-summary"]'),
   list: document.querySelector('[data-role="list"]'),
   editor: document.querySelector('[data-role="editor"]'),
   secondaryPrimary: document.querySelector('[data-role="secondary-primary"]'),
@@ -72,6 +73,26 @@ function toneForDate(item) {
   if (days <= 0) return 'danger';
   if (days <= 2) return 'warn';
   return 'success';
+}
+
+function filterDescription() {
+  const parts = [];
+  const search = state.ui.search.trim();
+  if (search) parts.push(`matching “${search}”`);
+  if (state.ui.category !== 'all') parts.push(`in ${state.ui.category}`);
+  if (state.ui.status !== 'all') parts.push(`with status ${state.ui.status}`);
+  return parts.length ? parts.join(', ') : 'with no filters applied';
+}
+
+function visibleResultsCopy(items) {
+  if (!state.items.length) return `No ${SPEC.itemPluralLabel.toLowerCase()} yet. Add a path to start comparing options.`;
+  const noun = items.length === 1 ? SPEC.itemLabel : SPEC.itemPluralLabel.toLowerCase();
+  if (!items.length) return `No ${SPEC.itemPluralLabel.toLowerCase()} found ${filterDescription()}. Try widening the filters.`;
+  return `${items.length} ${noun} visible ${filterDescription()}.`;
+}
+
+function itemA11yLabel(item) {
+  return `${item.title}. ${item.state} ${SPEC.itemLabel}. Priority ${priority(item)}. ${SPEC.date.label}: ${formatDate(item.date)}. ${SPEC.metric.label}: ${item.metric} of ${SPEC.metric.max}.`;
 }
 
 function hydrate() {
@@ -223,6 +244,7 @@ function renderStats(items) {
     </article>
   `).join('');
   refs.count.textContent = items[0] ? `Top: ${items[0].title}` : `No ${SPEC.itemPluralLabel.toLowerCase()}`;
+  refs.resultsSummary.textContent = visibleResultsCopy(items);
 }
 
 function renderInsights() {
@@ -261,15 +283,15 @@ function renderList(items) {
   if (!items.length) {
     refs.list.innerHTML = `
       <div class="empty">
-        <strong>${SPEC.emptyTitle}</strong>
-        <p>${SPEC.emptyBody}</p>
+        <strong>${state.items.length ? 'No matching price paths' : SPEC.emptyTitle}</strong>
+        <p>${state.items.length ? 'Search, path type, or status filters are hiding every path. Clear a filter or re-seed the sample board.' : SPEC.emptyBody}</p>
       </div>
     `;
     return;
   }
 
   refs.list.innerHTML = items.map((item) => `
-    <button class="item ${item.id === state.ui.selectedId ? 'is-selected' : ''}" type="button" data-id="${item.id}" aria-pressed="${item.id === state.ui.selectedId}">
+    <button class="item ${item.id === state.ui.selectedId ? 'is-selected' : ''}" type="button" data-id="${item.id}" role="option" aria-selected="${item.id === state.ui.selectedId}" aria-label="${escapeHtml(itemA11yLabel(item))}">
       <div class="item-top">
         <strong>${escapeHtml(item.title)}</strong>
         <span class="score">${priority(item)}</span>
@@ -365,7 +387,7 @@ function renderEditor(item) {
         </label>
       </div>
       <div class="quick-actions">
-        ${SPEC.actions.map((action) => `<button class="btn" type="button" data-action-id="${action.id}">${action.label}</button>`).join('')}
+        ${SPEC.actions.map((action) => `<button class="btn" type="button" data-action-id="${action.id}" aria-label="${escapeHtml(`${action.label} for ${item.title}`)}">${action.label}</button>`).join('')}
       </div>
       <div class="editor-actions">
         <span class="helper">${SPEC.date.label} ${formatDate(item.date)} and ${SPEC.metric.label.toLowerCase()} ${item.metric}/${SPEC.metric.max}.</span>

@@ -35,32 +35,33 @@
       <section class="stats" data-role="stats"></section>
       <section class="insights" data-role="insights"></section>
 
-      <section class="controls card">
-        <label>
+      <section class="controls card" aria-label="Filter price paths">
+        <label for="path-search">
           <span>Search</span>
-          <input type="search" data-field="search" placeholder="Search price paths, notes, and next steps..." />
+          <input id="path-search" type="search" data-field="search" placeholder="Search price paths, notes, and next steps..." aria-describedby="results-summary" />
         </label>
-        <label>
+        <label for="path-category">
           <span>Path type</span>
-          <select data-field="category"></select>
+          <select id="path-category" data-field="category" aria-describedby="results-summary"></select>
         </label>
-        <label>
+        <label for="path-status">
           <span>Status</span>
-          <select data-field="status"></select>
+          <select id="path-status" data-field="status" aria-describedby="results-summary"></select>
         </label>
         <button class="btn" type="button" data-action="reset">Re-seed sample</button>
+        <p class="results-summary" id="results-summary" data-role="results-summary" aria-live="polite"></p>
       </section>
 
       <section class="workspace">
         <article class="card list-panel">
           <div class="panel-head">
             <div>
-              <strong>Price paths</strong>
+              <strong id="price-paths-list-label">Price paths</strong>
               <p>Sketch pricing experiments and compare which paths feel strongest.</p>
             </div>
             <span class="chip" data-role="count"></span>
           </div>
-          <div class="list" data-role="list"></div>
+          <div class="list" data-role="list" role="listbox" aria-labelledby="price-paths-list-label"></div>
         </article>
         <article class="card editor-panel" data-role="editor"></article>
       </section>
