@@ -9,6 +9,7 @@ import {
   daysFromToday,
   isValidISODate,
   normalize,
+  pricePathReadiness,
   priority,
   safeLoad,
   todayISO,
@@ -96,6 +97,43 @@ test('priority stays finite for items with malformed dates', () => {
   const item = { ...normalize({ title: 'X', state: 'Testing', score: 7, metric: 7, effort: 3 }), date: 'broken' };
   assert.doesNotThrow(() => priority(item, today));
   assert.equal(Number.isFinite(priority(item, today)), true);
+});
+
+test('pricePathReadiness grades a focused testing path as ready', () => {
+  const result = pricePathReadiness({
+    title: 'Agency pilot tier',
+    state: 'Testing',
+    score: 9,
+    effort: 3,
+    metric: 8,
+    textOne: 'Small agencies buying their first retainer',
+    textTwo: 'Discount could anchor future retainers too low',
+    date: '2026-06-14',
+  }, '2026-06-10');
+
+  assert.equal(result.grade, 'ready');
+  assert.equal(result.score, 100);
+  assert.deepEqual(result.blockers, []);
+  assert.ok(result.strengths.includes('Testing status shows this path is already in motion.'));
+});
+
+test('pricePathReadiness flags vague or stale price tests for agent review', () => {
+  const result = pricePathReadiness({
+    title: 'Maybe premium',
+    state: 'Dropped',
+    score: 4,
+    effort: 8,
+    metric: 3,
+    textOne: SPEC.textOne.default,
+    textTwo: SPEC.textTwo.default,
+    date: '2026-06-01',
+  }, '2026-06-10');
+
+  assert.equal(result.grade, 'needs-work');
+  assert.ok(result.score < 40);
+  assert.ok(result.blockers.includes('Path is dropped, so it should not be evaluated as a live test.'));
+  assert.ok(result.blockers.includes('Audience needs a specific buyer segment.'));
+  assert.ok(result.blockers.includes('Review date is overdue.'));
 });
 
 test('daysFromToday is deterministic when given an anchor', () => {

@@ -234,6 +234,78 @@ export function priority(item, today = todayISO()) {
   return item.score * 6 + item.metric * 5 + dueBoost + stateWeight(item.state) - item.effort * 4;
 }
 
+function hasSpecificText(value, fallback) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  return text.length >= 12 && text !== fallback;
+}
+
+export function pricePathReadiness(item = {}, today = todayISO()) {
+  const candidate = normalize(item);
+  const blockers = [];
+  const strengths = [];
+  let score = 0;
+
+  if (candidate.state === 'Dropped') {
+    blockers.push('Path is dropped, so it should not be evaluated as a live test.');
+  } else if (candidate.state === 'Validated') {
+    score += 12;
+    strengths.push('Validated paths have enough signal to preserve the learning.');
+  } else if (candidate.state === 'Testing') {
+    score += 20;
+    strengths.push('Testing status shows this path is already in motion.');
+  } else {
+    score += 12;
+  }
+
+  if (candidate.metric >= 7) {
+    score += 20;
+    strengths.push('Confidence is strong enough to justify a live pricing test.');
+  } else if (candidate.metric >= 5) {
+    score += 12;
+  } else {
+    blockers.push('Confidence is below 5/10.');
+  }
+
+  const upsideMargin = candidate.score - candidate.effort;
+  if (upsideMargin >= 4) {
+    score += 20;
+    strengths.push('Upside is clearly higher than risk.');
+  } else if (upsideMargin >= 2) {
+    score += 14;
+  } else if (upsideMargin >= 0) {
+    score += 8;
+  } else {
+    blockers.push('Risk is higher than upside.');
+  }
+
+  if (hasSpecificText(candidate.textOne, SPEC.textOne.default)) score += 10;
+  else blockers.push('Audience needs a specific buyer segment.');
+
+  if (hasSpecificText(candidate.textTwo, SPEC.textTwo.default)) score += 10;
+  else blockers.push('Risk needs a concrete failure mode.');
+
+  const daysUntilReview = daysFromToday(candidate.date, today);
+  if (daysUntilReview < 0) {
+    score += 4;
+    blockers.push('Review date is overdue.');
+  } else if (daysUntilReview <= 7) {
+    score += 20;
+    strengths.push('Review date is soon enough to force a decision.');
+  } else if (daysUntilReview <= 14) {
+    score += 14;
+  } else {
+    score += 8;
+    blockers.push('Review date is too far away for a tight price test.');
+  }
+
+  return {
+    score: clamp(score, 0, 100),
+    grade: score >= 80 ? 'ready' : score >= 60 ? 'watch' : 'needs-work',
+    blockers,
+    strengths,
+  };
+}
+
 export function bestActiveItem(items, today = todayISO()) {
   const completed = completedStates();
   const active = items.filter((item) => item && !completed.has(item.state));
