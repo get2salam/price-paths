@@ -35,6 +35,8 @@ Then open <http://localhost:8000>.
 
 - `N` creates a new price path
 - `/` focuses the search box
+- `Arrow Up` / `Arrow Down` moves through the visible price paths
+- `Home` / `End` jumps to the first or last visible price path
 - `Esc` clears the search box when it is focused
 
 ## Privacy

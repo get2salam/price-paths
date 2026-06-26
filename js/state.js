@@ -316,6 +316,25 @@ export function bestActiveItem(items, today = todayISO()) {
   )[0];
 }
 
+export function nextSelectionId(items = [], selectedId = null, key = '') {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  const ids = items.map((item) => item?.id).filter(Boolean);
+  if (ids.length === 0) return null;
+
+  if (key === 'Home') return ids[0];
+  if (key === 'End') return ids[ids.length - 1];
+
+  const currentIndex = ids.indexOf(selectedId);
+  if (key === 'ArrowDown') {
+    return ids[currentIndex >= 0 ? Math.min(currentIndex + 1, ids.length - 1) : 0];
+  }
+  if (key === 'ArrowUp') {
+    return ids[currentIndex >= 0 ? Math.max(currentIndex - 1, 0) : ids.length - 1];
+  }
+
+  return selectedId;
+}
+
 export function seedState() {
   return {
     boardTitle: SPEC.boardTitle,

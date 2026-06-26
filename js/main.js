@@ -7,6 +7,7 @@ import {
   completedStates,
   daysFromToday,
   isValidISODate,
+  nextSelectionId,
   normalize,
   priority,
   safeLoad,
@@ -124,6 +125,14 @@ function filteredItems() {
 
 function selectedItem() {
   return state.items.find((item) => item.id === state.ui.selectedId) || filteredItems()[0] || null;
+}
+
+function moveListSelection(key) {
+  const items = filteredItems();
+  const selectedId = nextSelectionId(items, state.ui.selectedId, key);
+  if (selectedId && selectedId !== state.ui.selectedId) {
+    commit({ ...state, ui: { ...state.ui, selectedId } });
+  }
 }
 
 function commit(nextState) {
@@ -513,6 +522,11 @@ document.addEventListener('keydown', (event) => {
   }
   if (event.target.closest('input, textarea, select')) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+    event.preventDefault();
+    moveListSelection(event.key);
+    return;
+  }
   if (event.key.toLowerCase() === 'n') {
     event.preventDefault();
     addItem();

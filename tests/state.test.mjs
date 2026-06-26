@@ -8,6 +8,7 @@ import {
   clamp,
   daysFromToday,
   isValidISODate,
+  nextSelectionId,
   normalize,
   pricePathReadiness,
   priority,
@@ -82,6 +83,37 @@ test('bestActiveItem ranks active items by priority, then earlier date', () => {
     normalize({ title: 'Mid priority',   state: 'Exploring', score: 7, effort: 3, metric: 6, date: '2026-06-11' }),
   ];
   assert.equal(bestActiveItem(items, today).title, 'Top priority');
+});
+
+test('nextSelectionId moves through visible price paths without wrapping', () => {
+  const items = [
+    { id: 'entry' },
+    { id: 'core' },
+    { id: 'premium' },
+  ];
+
+  assert.equal(nextSelectionId(items, 'entry', 'ArrowDown'), 'core');
+  assert.equal(nextSelectionId(items, 'core', 'ArrowUp'), 'entry');
+  assert.equal(nextSelectionId(items, 'premium', 'ArrowDown'), 'premium');
+  assert.equal(nextSelectionId(items, 'entry', 'ArrowUp'), 'entry');
+});
+
+test('nextSelectionId supports Home and End for listbox keyboard access', () => {
+  const items = [
+    { id: 'entry' },
+    { id: 'core' },
+    { id: 'premium' },
+  ];
+
+  assert.equal(nextSelectionId(items, 'core', 'Home'), 'entry');
+  assert.equal(nextSelectionId(items, 'core', 'End'), 'premium');
+  assert.equal(nextSelectionId(items, null, 'ArrowDown'), 'entry');
+  assert.equal(nextSelectionId(items, null, 'ArrowUp'), 'premium');
+});
+
+test('nextSelectionId is stable for empty lists and unrelated keys', () => {
+  assert.equal(nextSelectionId([], 'entry', 'ArrowDown'), null);
+  assert.equal(nextSelectionId([{ id: 'entry' }], 'entry', 'PageDown'), 'entry');
 });
 
 test('priority gives no due-boost to completed paths', () => {
