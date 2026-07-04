@@ -1,5 +1,7 @@
 # Price Paths
 
+[![CI](https://github.com/get2salam/price-paths/actions/workflows/ci.yml/badge.svg)](https://github.com/get2salam/price-paths/actions/workflows/ci.yml)
+
 Sketch pricing experiments and compare which paths feel strongest.
 
 ![Price Paths preview](docs/preview.svg)
@@ -30,6 +32,16 @@ python -m http.server 8000
 ```
 
 Then open <http://localhost:8000>.
+
+## Local verification
+
+```bash
+npm test
+```
+
+This runs the state-logic test suite (`tests/state.test.mjs`) with Node's
+built-in test runner. The same command runs in CI on Node 18, 20, and 22 for
+every push and pull request against `main`.
 
 ## Keyboard shortcuts
 
