@@ -306,6 +306,45 @@ export function pricePathReadiness(item = {}, today = todayISO()) {
   };
 }
 
+export function portfolioAudit(items = [], today = todayISO()) {
+  const completed = completedStates();
+  const active = (Array.isArray(items) ? items : []).filter((item) => item && !completed.has(item.state));
+
+  if (active.length === 0) {
+    return { score: 0, grade: 'needs-work', flags: ['No active price paths to pressure-test.'], activeCount: 0, testingCount: 0, overdueCount: 0 };
+  }
+
+  const testingCount = active.filter((item) => item.state === 'Testing').length;
+  const overdueCount = active.filter((item) => daysFromToday(item.date, today) < 0).length;
+
+  const byCategory = new Map();
+  for (const item of active) byCategory.set(item.category, (byCategory.get(item.category) || 0) + 1);
+  const topCategoryShare = Math.max(...byCategory.values()) / active.length;
+
+  const flags = [];
+  if (testingCount === 0) {
+    flags.push('No price path is currently in testing, so no live signal is coming in.');
+  }
+  if (overdueCount > 0) {
+    flags.push(`${overdueCount} active price path${overdueCount === 1 ? '' : 's'} ${overdueCount === 1 ? 'has' : 'have'} an overdue review date.`);
+  }
+  if (active.length >= 2 && topCategoryShare >= 0.75) {
+    flags.push('Over three-quarters of active paths share one path type, so the mix is not diversified.');
+  }
+
+  const averageReadiness = active.reduce((sum, item) => sum + pricePathReadiness(item, today).score, 0) / active.length;
+  const score = clamp(averageReadiness - flags.length * 10, 0, 100);
+
+  return {
+    score: Math.round(score),
+    grade: score >= 80 ? 'ready' : score >= 60 ? 'watch' : 'needs-work',
+    flags,
+    activeCount: active.length,
+    testingCount,
+    overdueCount,
+  };
+}
+
 export function bestActiveItem(items, today = todayISO()) {
   const completed = completedStates();
   const active = items.filter((item) => item && !completed.has(item.state));

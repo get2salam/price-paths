@@ -23,6 +23,21 @@ Price Paths is a local-first workspace for founders, operators, and solo builder
 
 Price Paths is not just a generic list. It is shaped around the real workflow behind price paths, so the board helps you decide what matters next instead of simply storing records.
 
+## Portfolio audit
+
+Beyond scoring a single price path, `portfolioAudit(items, today)` in
+`js/state.js` grades the whole active board at once. It flags when nothing is
+currently in testing, when review dates have slipped, and when one path type
+dominates the mix — the kind of checks an agent or CI job can run against a
+JSON export to catch drift before it becomes a stalled board:
+
+```js
+import { portfolioAudit } from './js/state.js';
+
+const result = portfolioAudit(items, '2026-06-10');
+// { score: 74, grade: 'watch', flags: [...], activeCount, testingCount, overdueCount }
+```
+
 ## Quick start
 
 ```bash

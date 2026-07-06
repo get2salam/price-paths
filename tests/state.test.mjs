@@ -10,6 +10,7 @@ import {
   isValidISODate,
   nextSelectionId,
   normalize,
+  portfolioAudit,
   pricePathReadiness,
   priority,
   safeLoad,
@@ -186,6 +187,55 @@ test('normalize clamps score, effort, and confidence into the spec range', () =>
   assert.equal(item.score, 10);
   assert.equal(item.effort, 1);
   assert.equal(item.metric, SPEC.metric.max);
+});
+
+test('portfolioAudit flags an empty board as needs-work with no active paths', () => {
+  const result = portfolioAudit([], '2026-06-10');
+  assert.equal(result.grade, 'needs-work');
+  assert.equal(result.score, 0);
+  assert.deepEqual(result.flags, ['No active price paths to pressure-test.']);
+});
+
+test('portfolioAudit flags a board with no path currently in testing', () => {
+  const items = [
+    normalize({ title: 'A', state: 'Exploring', category: 'Entry', score: 8, effort: 2, metric: 8, date: '2026-06-20' }),
+    normalize({ title: 'B', state: 'Exploring', category: 'Core', score: 7, effort: 3, metric: 7, date: '2026-06-21' }),
+  ];
+  const result = portfolioAudit(items, '2026-06-10');
+  assert.ok(result.flags.includes('No price path is currently in testing, so no live signal is coming in.'));
+  assert.equal(result.testingCount, 0);
+});
+
+test('portfolioAudit counts and pluralizes overdue active paths', () => {
+  const items = [
+    normalize({ title: 'A', state: 'Testing', category: 'Entry', score: 8, effort: 2, metric: 8, date: '2026-06-01' }),
+    normalize({ title: 'B', state: 'Testing', category: 'Core', score: 7, effort: 3, metric: 7, date: '2026-06-02' }),
+  ];
+  const result = portfolioAudit(items, '2026-06-10');
+  assert.equal(result.overdueCount, 2);
+  assert.ok(result.flags.includes('2 active price paths have an overdue review date.'));
+});
+
+test('portfolioAudit flags category concentration when one type dominates active paths', () => {
+  const items = [
+    normalize({ title: 'A', state: 'Testing', category: 'Entry', score: 8, effort: 2, metric: 8, date: '2026-06-20' }),
+    normalize({ title: 'B', state: 'Exploring', category: 'Entry', score: 7, effort: 3, metric: 7, date: '2026-06-21' }),
+    normalize({ title: 'C', state: 'Testing', category: 'Entry', score: 6, effort: 4, metric: 6, date: '2026-06-22' }),
+  ];
+  const result = portfolioAudit(items, '2026-06-10');
+  assert.ok(result.flags.includes('Over three-quarters of active paths share one path type, so the mix is not diversified.'));
+});
+
+test('portfolioAudit rates a diversified, on-track board as ready with no flags', () => {
+  const items = [
+    normalize({ title: 'A', state: 'Testing', category: 'Entry', score: 9, effort: 2, metric: 9,
+      textOne: 'First-time freelancers testing paid work', textTwo: 'Discount anchors expectations too low', date: '2026-06-14' }),
+    normalize({ title: 'B', state: 'Exploring', category: 'Core', score: 8, effort: 3, metric: 8,
+      textOne: 'Growing agencies on monthly retainers', textTwo: 'Scope creep erodes the margin', date: '2026-06-15' }),
+  ];
+  const result = portfolioAudit(items, '2026-06-10');
+  assert.deepEqual(result.flags, []);
+  assert.equal(result.grade, 'ready');
 });
 
 test('safeLoad falls back to the seeded board for malformed input', () => {
